@@ -1,0 +1,189 @@
+<%- include('header'); %>
+
+<!-- Page Content-->
+<section class="py-5">
+    <div class="container px-5 my-5">
+        <div class="row gx-5">
+            <div class="col-lg-3">
+                <div class="d-flex align-items-center mt-lg-5 mb-4">
+                    <img class="img-fluid rounded-circle" src="https://dummyimage.com/50x50/ced4da/6c757d.jpg" alt="..." />
+                    <div class="ms-3">
+                        <div class="fw-bold">Valerie Luna</div>
+                        <div class="text-muted">News, Business</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-9">
+                <!-- Post content-->
+                <article>
+                    <!-- Post header-->
+                    <header class="mb-4">
+                        <!-- Post title-->
+                        <h1 class="fw-bolder mb-1"><%= post.title %></h1>
+                        <!-- Post meta content-->
+                        <div class="text-muted fst-italic mb-2">January 1, 2021</div>
+                        <!-- Post categories-->
+                        <a class="badge bg-secondary text-decoration-none link-light" href="#!">Web Design</a>
+                        <a class="badge bg-secondary text-decoration-none link-light" href="#!">Freebies</a>
+                    </header>
+                    <!-- Preview image figure-->
+                    <figure class="mb-4">
+                        <% if(post.image){ %>
+                        <img class="img-fluid rounded" src="<%= post.image %>" alt="..." />
+                        <% }else{ %>
+                        <img class="img-fluid rounded" src="https://dummyimage.com/900x400/ced4da/6c757d.jpg" alt="..." />
+                        <% } %>
+                    </figure>
+                    <!-- Post content-->
+                    <section class="mb-5">
+                        <% contents = post.content.replace(/<img/g , "<img width='100%' height='auto'") %>
+                        <%-   contents %>
+
+                    </section>
+                </article>
+                <!-- Comments section-->
+                <section>
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <!-- Comment form-->
+                            <form class="mb-4" method="POST" id="idForm" action="/do-comment">
+                                <input type="hidden" id="post_id" name="post_id" value="<%= post._id %>">
+                                <div class="mb-3">
+                                    <input class="form-control" type="text" name="username" placeholder="Username">
+                                </div>
+                                <div class="mb-3">
+                                    <input class="form-control" type="text" name="email" placeholder="Email">
+                                </div>
+                                <div class="mb-3">
+                                    <textarea class="form-control" rows="3" placeholder="Comments" name="comment"></textarea>
+                                </div>
+
+
+                                <button type="submit" class="btn btn-primary">Submit</button>
+
+                            </form>
+
+                            <script>
+                                var socket = io();
+                                $("#idForm").submit(function(e) {
+
+                                    e.preventDefault(); // avoid to execute the actual submit of the form.
+
+                                    var form = $(this);
+                                    var url = form.attr('action');
+
+                                    var formData = {
+                                        post_id: $("input[name='post_id']").val(),
+                                        username: $("input[name='username']").val(),
+                                        comment: $("textarea[name='comment']").val(),
+                                        email: $("input[name='email']").val(),
+                                    };
+
+                                    $.ajax({
+                                        type: "POST",
+                                        url: url,
+                                        data: formData,
+                                        success: function(data) {
+                                            formData._id = data._id;
+                                            socket.emit("new_comment", formData);
+                                            // console.log(data._id);
+                                            alert(data.text); // show response from the php script.
+                                        }
+                                    });
+
+
+                                });
+                                socket.on("new_comment", function(comment) {
+                                    if (comment.post_id != $("post_id").val()) {
+                                        return;
+                                    }
+                                    var html = "";
+                                    html += '<div class="d-flex mb-4">';
+                                    html += ' <!-- Parent comment-->';
+                                    html += ' <div class="flex-shrink-0"><img class="rounded-circle" src="https://dummyimage.com/50x50/ced4da/6c757d.jpg" alt="..." /></div>';
+                                    html += '<div class="ms-3">';
+                                    html += ' <div class="fw-bold">';
+                                    html += comment.username;
+                                    html += '</div>';
+                                    html += comment.comment;
+                                    html += ' <!-- Child comment 1-->';
+                                    html += '<!-- <div class="d-flex mt-4">';
+                                    html += '<div class="flex-shrink-0"><img class="rounded-circle" src="https://dummyimage.com/50x50/ced4da/6c757d.jpg" alt="..." /></div>';
+                                    html += '<div class="ms-3">';
+                                    html += '<div class="fw-bold">Commenter Name</div>';
+                                    html += 'And under those conditions, you cannot establish a capital-market evaluation of that enterprise. You can\'t get investors.';
+                                    html += '</div>';
+                                    html += '</div> -->';
+                                    html += '</div>';
+                                    html += ' </div>';
+                                    $("#comments").prepend(html);
+
+
+                                })
+                                $("#comment-form").submit(function(e) {
+                                    e.preventDefault();
+                                    var form = $(this);
+                                    var url = form.attr('action');
+                                    var formData = {
+                                        post_id: $("input[name='post_id']").val(),
+                                        comment_id: $("input[name='comment_id']").val(),
+                                        name: $("input[name='name']").val(),
+                                        reply: $("textarea[name='reply']").val(),
+                                    };
+
+                                    $.ajax({
+                                        type: "POST",
+                                        url: url,
+                                        data: form.serialize(),
+                                        success: function(response) {
+                                            alert(response)
+                                        }
+                                    })
+                                })
+                            </script>
+                            <div id="comments">
+                                <% if(post.comments){ %>
+                                <% post.comments = post.comments.reverse() %>
+                                <!-- Comment with nested comments-->
+                                <% post.comments.forEach(function (comment){ %>
+                                <div class="d-flex mb-4">
+                                    <!-- Parent comment-->
+                                    <div class="flex-shrink-0"><img class="rounded-circle" src="https://dummyimage.com/50x50/ced4da/6c757d.jpg" alt="..." /></div>
+                                    <div class="ms-3">
+                                        <div class="fw-bold"><%= comment.username %></div>
+                                        <%= comment.comment %>
+                                        <div class="d-flex mt-4">
+                                            <form method="post" action="/do-reply" id="comment-form">
+                                                <input type="hidden" name="post_id" value="<%= post._id %>">
+                                                <input type="hidden" name="comment_id" value="<%= comment._id %>">
+                                                <div class="mb-3">
+                                                    <input class="form-control" type="text" name="name" placeholder="Username">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <textarea class="form-control" rows="3" placeholder="Comments" name="reply"></textarea>
+                                                </div>
+                                                <button type="submit" class="btn btn-primary btn-sm">Submit</button>
+                                            </form>
+                                        </div>
+
+                                        <!-- Child comment 1-->
+                                        <!-- <div class="d-flex mt-4">
+											<div class="flex-shrink-0"><img class="rounded-circle" src="https://dummyimage.com/50x50/ced4da/6c757d.jpg" alt="..." /></div>
+											<div class="ms-3">
+												<div class="fw-bold">Commenter Name</div>
+												And under those conditions, you cannot establish a capital-market evaluation of that enterprise. You can't get investors.
+											</div>
+										</div> -->
+                                    </div>
+                                </div>
+                                <% })} %>
+                            </div>
+                            <!-- Single comment-->
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+</section>
+<%- include('footer'); %>

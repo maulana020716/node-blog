@@ -1,0 +1,157 @@
+<%- include('header'); %>
+<form action="/do-post" id="idForm" method="post" class="mt-3">
+    <div class="mb-3">
+        <label class="form-label">Title</label>
+        <input type="text" class="form-control" name="title">
+    </div>
+    <div class="mb-3">
+        <!-- Button trigger modal -->
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#myModal">
+            Upload Image
+        </button>
+    </div>
+
+
+    <div class="mb-3">
+        <label class="form-label">Content</label>
+        <textarea id="editor" name="content" id="" cols="30" rows="50"></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+
+
+
+</form>
+
+
+<!-- The Modal -->
+<div class="modal" id="myModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <h4 class="modal-title">Modal Heading</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <!-- Modal body -->
+            <form method="POST" enctype="multipart/form-data" id="form-upload" action="/do-upload-image">
+
+                <div class="modal-body">
+                    <div class="form-group">
+                        <input type="file" name="file" class="form-control">
+                    </div>
+                </div>
+
+                <!-- Modal footer -->
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
+                    <input type="submit" class="btn btn-success" value="Upload">
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+<table class="table">
+    <tr>
+        <th>Title</th>
+        <th>Image</th>
+        <th>Action</th>
+    </tr>
+
+    <% posts.forEach(function(post){ %>
+    <tr>
+        <td><%= post.title %></td>
+        <td><img src="<%= post.image %>" alt="" style="width:300px"></td>
+        <td>
+            <a href="/posts/edit/<%= post._id %>" class="btn btn-sm btn-warning">edit</a>
+            <button type="button" class="btn btn-danger btn-sm" onclick="doDelete('<%= post._id %>','<%= post.image %>')">
+                Delete
+            </button>
+        </td>
+    </tr>
+    <% }) %>
+</table>
+
+<script>
+    function doDelete(postId, image) {
+        $.ajax({
+            url: "/do-delete",
+            method: "POST",
+            data: {
+                _id: postId,
+                image: image
+            },
+            success: function(response) {
+                alert(response);
+                location.reload();
+            }
+        })
+
+    }
+    $("#form-upload").submit(function(e) {
+
+        e.preventDefault(); // avoid to execute the actual submit of the form.
+        var form = $(this);
+        var url = form.attr('action');
+        var imagePath = "";
+        $.ajax({
+            type: "POST",
+            url: url,
+            data: new FormData(this),
+            contentType: false,
+            cache: false,
+            processData: false,
+            success: function(data) {
+                window.imagePath = data;
+                $("#myModal").modal("hide");
+            }
+        });
+
+
+    });
+</script>
+<script>
+    $("#idForm").submit(function(e) {
+
+        e.preventDefault(); // avoid to execute the actual submit of the form.
+
+        var form = $(this);
+        var url = form.attr('action');
+        var formData = {
+            title: $("input[name='title']").val(),
+            content: editor.getData(),
+            image: imagePath
+        }
+
+        $.ajax({
+            type: "POST",
+            url: url,
+            data: formData,
+            success: function(data) {
+                alert(data.text); // show response from the php script.
+                formData._id = data._id;
+
+                var socket = io();
+                socket.emit("new_post", formData);
+
+            }
+        });
+
+
+    });
+</script>
+<script>
+    ClassicEditor
+        .create(document.querySelector('#editor'))
+        .then(newEditor => {
+            window.editor = newEditor;
+        })
+        .catch(error => {
+            console.error(error);
+        });
+</script>
+
+
+<%- include('footer'); %>
